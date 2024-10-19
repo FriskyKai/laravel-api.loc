@@ -10,6 +10,8 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -25,30 +27,41 @@ class AuthController extends Controller
         $user = User::create([... $validated, 'role_id' => $role_id]);
 
         // Создание токена для пользователя
-        $token = $user->createToken('token')->plainTextToken;
+        $user->api_token = Hash::make(Str::random(60));
+        $user->save();
 
         // Возвращаем ответ с токеном
         return response()->json([
             'user' => new UserResource($user),
-            'token' => $token,
+            'token' => $user->api_token,
         ])->setStatusCode(201);
     }
 
     // Авторизация
     public function login(Request $request) {
         if (!Auth::attempt($request->only('login', 'password'))) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            throw new ApiException('Неверный логин и/или пароль', 401);
         }
 
-        $token = Auth::user()->createToken('token')->plainTextToken;
+        // Получение текущего пользователя
+        $user = Auth::user();
 
-        return response()->json([$token]);
+        // Создание нового токена для пользователя
+        $user->api_token = Hash::make(Str::random(60));
+        $user->save();
+
+        return response()->json(['token' => $user->api_token])->setStatusCode(200);
     }
 
     // Выход
     public function logout(Request $request) {
-        $request->user()->currentAccessToken()->delete();
+        // Получение текущего пользователя
+        $user = Auth::user();
 
-        return response()->json(['message' => 'Logged out']);
+        // Создание нового токена для пользователя
+        $user->api_token = null;
+        $user->save();
+
+        return response()->json(['message' => 'Вы вышли из системы'])->setStatusCode(200);
     }
 }
