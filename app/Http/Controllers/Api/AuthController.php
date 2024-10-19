@@ -10,6 +10,8 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -25,12 +27,13 @@ class AuthController extends Controller
         $user = User::create([... $validated, 'role_id' => $role_id]);
 
         // Создание токена для пользователя
-        $token = $user->createToken('token')->plainTextToken;
+        $user->api_token = Hash::make(Str::random(60));
+        $user->save();
 
         // Возвращаем ответ с токеном
         return response()->json([
             'user' => new UserResource($user),
-            'token' => $token,
+            'token' => $user->api_token,
         ])->setStatusCode(201);
     }
 

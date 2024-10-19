@@ -22,17 +22,19 @@ class User extends Authenticatable
         'login',
         'email',
         'password',
+        'api_token',
         'role_id',
     ];
 
     protected $hidden = [
         'password',
-        'remember_token',
+        'api_token',
     ];
 
     protected function casts(): array
     {
         return [
+            'birthday' => 'date',
             'password' => 'hashed',
         ];
     }
